@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Matrix · Cipo & Baxx</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c0c;
+    --bg2:#141414;
+    --bg3:#1b1b1b;
+    --line:#262626;
+    --text:#f4f4f2;
+    --muted:#8a8a87;
+    --soft:#b7b7b2;
+    --accent:#e8333a;
+    --accent-dim:rgba(232,51,58,.14);
+    --good:#3ecf6a;
+    --warn:#f0b84a;
+    --blue:#5aa9ff;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--sans); -webkit-font-smoothing:antialiased;}
+  body{padding-bottom:60px;}
+  button,input{font:inherit;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 18px;}
+
+  header{border-bottom:1px solid var(--line); padding:22px 0 18px;}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.18em; color:var(--accent); text-transform:uppercase; display:flex; align-items:center; gap:8px;}
+  .dot{width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block;}
+  .dot.live{animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  h1{font-size:26px; font-weight:800; letter-spacing:0; margin:6px 0 0; line-height:1.15;}
+  .sub-row{display:flex; justify-content:space-between; align-items:center; margin-top:7px; gap:10px; flex-wrap:wrap;}
+  .sub{color:var(--muted); font-size:12.5px; font-family:var(--mono);}
+  .toolbar{display:flex; align-items:center; gap:8px;}
+  .refresh-btn{background:none; border:1px solid var(--line); color:var(--muted); font-family:var(--mono); font-size:11px; padding:7px 10px; border-radius:7px; cursor:pointer; flex-shrink:0; white-space:nowrap;}
+  .refresh-btn:hover{border-color:var(--accent); color:var(--text);}
+  .refresh-btn:disabled{opacity:.5; cursor:default;}
+
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); margin-top:18px; border:1px solid var(--line);}
+  .kpi{background:var(--bg); padding:14px 12px; min-width:0;}
+  .kpi .num{font-family:var(--mono); font-size:20px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .kpi .lbl{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-top:4px; line-height:1.25;}
+  .kpi.current .num{color:var(--good);}
+  .kpi.pipeline .num{color:var(--warn);}
+  .kpi.total .num{color:var(--accent);}
+
+  .history-section{padding:20px 0 2px;}
+  .history-panel{border:1px solid var(--line); background:var(--bg); border-radius:10px; overflow:hidden;}
+  .history-head{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:13px 14px; border-bottom:1px solid var(--line); background:var(--bg2);}
+  .history-title{font-weight:800; font-size:14px; text-transform:uppercase; letter-spacing:.04em;}
+  .history-meta{font-family:var(--mono); color:var(--muted); font-size:11px; text-align:right;}
+  .history-kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border-bottom:1px solid var(--line);}
+  .history-kpi{background:var(--bg); padding:12px 12px;}
+  .history-kpi .num{font-family:var(--mono); font-size:18px; font-weight:700;}
+  .history-kpi .lbl{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:3px;}
+  .history-kpi .delta{font-family:var(--mono); font-size:11px; margin-top:5px;}
+  .delta.up{color:var(--good);}
+  .delta.down{color:var(--accent);}
+  .delta.flat{color:var(--muted);}
+  .chart-wrap{padding:14px;}
+  .history-filters{display:flex; flex-wrap:wrap; gap:8px; padding:12px 14px 0;}
+  .history-filter{border:1px solid var(--line); background:var(--bg2); color:var(--muted); border-radius:8px; padding:7px 9px; font-family:var(--mono); font-size:11px; cursor:pointer; display:flex; align-items:center; gap:7px;}
+  .history-filter.active{color:var(--text); border-color:var(--soft);}
+  .history-filter .legend-swatch{width:10px; height:3px; border-radius:2px; display:inline-block;}
+  .chart-svg{display:block; width:100%; height:260px;}
+  .chart-grid{stroke:var(--line); stroke-width:1;}
+  .chart-axis-label{fill:var(--muted); font-family:var(--mono); font-size:10px;}
+  .chart-line{fill:none; stroke-width:2.25; stroke-linecap:round; stroke-linejoin:round;}
+  .chart-legend{display:flex; flex-wrap:wrap; gap:10px 14px; padding:0 14px 14px; font-family:var(--mono); color:var(--muted); font-size:11px;}
+  .legend-item{display:flex; align-items:center; gap:6px;}
+  .legend-swatch{width:10px; height:3px; border-radius:2px; display:inline-block;}
+
+  .band{border-bottom:1px solid var(--line); padding:20px 0 18px;}
+  .section-title{font-family:var(--mono); font-size:11px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; margin:0 0 10px; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .source-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line);}
+  .source-card{background:var(--bg2); padding:13px 12px;}
+  .source-card .value{font-family:var(--mono); font-size:18px; font-weight:700;}
+  .source-card .name{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px;}
+  .source-card.now .value{color:var(--good);}
+  .source-card.future .value{color:var(--warn);}
+  .source-card.production .value{color:var(--blue);}
+
+  .controls{display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:10px; padding:20px 0 4px; align-items:center;}
+  .search-box{position:relative; min-width:0;}
+  #searchInput{
+    width:100%; background:var(--bg2); border:1px solid var(--line); color:var(--text);
+    font-family:var(--mono); font-size:15px; padding:13px 42px 13px 15px; border-radius:10px;
+    outline:none; transition:border-color .15s;
+  }
+  #searchInput:focus{border-color:var(--accent);}
+  #searchInput::placeholder{color:var(--muted);}
+  .clear-btn{position:absolute; right:9px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:6px; display:none;}
+  .segmented{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg2);}
+  .segmented button{border:0; border-right:1px solid var(--line); background:transparent; color:var(--muted); padding:11px 12px; font-family:var(--mono); font-size:11px; cursor:pointer; white-space:nowrap;}
+  .segmented button:last-child{border-right:0;}
+  .segmented button.active{background:var(--accent-dim); color:var(--text);}
+
+  .status-block{color:var(--muted); font-size:13px; padding:40px 0; text-align:center; font-family:var(--mono);}
+  .status-block.error{color:var(--accent); border:1px dashed var(--accent); border-radius:10px; padding:20px; line-height:1.5;}
+
+  .summary{display:grid; grid-template-columns:1.25fr .75fr; gap:18px; margin-top:18px; align-items:start;}
+  .summary.single{grid-template-columns:1fr;}
+  .panel{border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg);}
+  .panel-head{display:flex; justify-content:space-between; gap:12px; align-items:center; background:var(--bg2); border-bottom:1px solid var(--line); padding:11px 14px;}
+  .panel-title{font-weight:800; font-size:13.5px; text-transform:uppercase; letter-spacing:.04em;}
+  .panel-meta{font-family:var(--mono); color:var(--muted); font-size:11px;}
+
+  table{width:100%; border-collapse:collapse;}
+  th,td{padding:10px 12px; border-bottom:1px solid var(--line); text-align:right; font-size:12.5px; vertical-align:middle;}
+  th{font-family:var(--mono); color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.06em; font-weight:500; background:var(--bg);}
+  th.sortable{cursor:pointer; user-select:none;}
+  th.sortable.active{color:var(--text);}
+  th.sortable.active::after{content:" ↓"; color:var(--accent);}
+  td{font-family:var(--mono);}
+  tr:last-child td{border-bottom:none;}
+  th.left,td.left{text-align:left;}
+  td.article{font-family:var(--sans); font-weight:800; color:var(--text); letter-spacing:0;}
+  td.size{font-weight:700; color:var(--text);}
+  .muted{color:var(--muted);}
+  .good{color:var(--good);}
+  .warn{color:var(--warn);}
+  .accent{color:var(--accent);}
+  .blue{color:var(--blue);}
+  .click-row{cursor:pointer;}
+  .click-row:hover{background:var(--bg2);}
+  .bar-cell{min-width:100px;}
+  .bar{height:6px; background:var(--bg2); border-radius:3px; overflow:hidden;}
+  .bar i{display:block; height:100%; background:linear-gradient(90deg,var(--accent),#ff6a5e);}
+
+  .detail{margin-top:18px; display:none;}
+  .detail.show{display:block;}
+  .article-head{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:14px; border-bottom:1px solid var(--line);}
+  .article-code{font-size:22px; font-weight:800; line-height:1.15;}
+  .article-type{font-family:var(--mono); color:var(--muted); font-size:11px; margin-top:4px;}
+  .article-total{text-align:right;}
+  .article-total .num{font-family:var(--mono); font-size:24px; color:var(--accent); font-weight:700;}
+  .article-total .lbl{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em;}
+  .source-pill-row{display:flex; flex-wrap:wrap; gap:8px; padding:12px 14px; border-bottom:1px solid var(--line);}
+  .pill{border:1px solid var(--line); border-radius:8px; padding:7px 9px; font-family:var(--mono); font-size:11px; color:var(--muted);}
+  .pill b{color:var(--text);}
+
+  .quality-list{padding:10px 14px 13px; display:grid; gap:8px;}
+  .quality-item{display:flex; justify-content:space-between; gap:10px; font-family:var(--mono); font-size:11.5px; color:var(--muted);}
+  .quality-item b{color:var(--text);}
+
+  footer{margin-top:28px; padding-top:14px; border-top:1px solid var(--line); font-family:var(--mono); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+
+  @media (max-width:900px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .history-kpis{grid-template-columns:repeat(2,1fr);}
+    .source-grid{grid-template-columns:repeat(3,1fr);}
+    .summary{grid-template-columns:1fr;}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 14px;}
+    header{padding:16px 0 14px;}
+    h1{font-size:20px;}
+    .sub{font-size:11px;}
+    .kpis{grid-template-columns:repeat(2,1fr); margin-top:14px;}
+    .history-section{padding-top:16px;}
+    .history-kpis{grid-template-columns:1fr;}
+    .chart-svg{height:220px;}
+    .kpi{padding:11px 9px;}
+    .kpi .num{font-size:17px;}
+    .kpi .lbl{font-size:9px;}
+    .source-grid{grid-template-columns:1fr;}
+    .controls{grid-template-columns:1fr; padding-top:16px;}
+    .segmented{width:100%;}
+    .segmented button{flex:1; padding:10px 8px;}
+    th,td{padding:8px 9px; font-size:11.5px;}
+    .wide-only{display:none;}
+    .bar-cell{min-width:56px;}
+    .article-head{flex-wrap:wrap;}
+    .article-total{text-align:left;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span class="dot live" id="liveDot"></span>CIPO &amp; BAXX · STOCK MATRIX</div>
+    <h1>Аналитический дашборд остатков</h1>
+    <div class="sub-row">
+      <div class="sub" id="snapshotDate">загрузка источников...</div>
+      <div class="toolbar">
+        <button class="refresh-btn" id="refreshBtn">↻ обновить</button>
+      </div>
+    </div>
+    <section class="history-section">
+      <div class="section-title">Динамика по времени <span id="historyStamp">загрузка истории...</span></div>
+      <div id="historyContent">
+        <div class="status-block">Загружаю историю слепков...</div>
+      </div>
+    </section>
+    <div class="kpis">
+      <div class="kpi current"><div class="num" id="kpiCurrent">-</div><div class="lbl">Остатки с ВБ + Остатки на ФФ</div></div>
+      <div class="kpi pipeline"><div class="num" id="kpiPipeline">-</div><div class="lbl">В пути (поставка с Турции) + Резерв Турция + Отшив</div></div>
+      <div class="kpi total"><div class="num" id="kpiTotal">-</div><div class="lbl">сумма всех слоёв</div></div>
+      <div class="kpi"><div class="num" id="kpiArticles">-</div><div class="lbl">артикулов</div></div>
+    </div>
+  </header>
+
+  <section class="band">
+    <div class="section-title">Разложение по источникам <span id="sourceStamp"></span></div>
+    <div class="source-grid">
+      <div class="source-card now"><div class="value" id="srcWb">-</div><div class="name">Остатки с ВБ</div></div>
+      <div class="source-card now"><div class="value" id="srcFf">-</div><div class="name">Остатки на ФФ</div></div>
+      <div class="source-card future"><div class="value" id="srcTurkeyWay">-</div><div class="name">В пути (поставка с Турции)</div></div>
+      <div class="source-card future"><div class="value" id="srcReserve">-</div><div class="name">Резерв Турция</div></div>
+      <div class="source-card production"><div class="value" id="srcSewing">-</div><div class="name">Отшив</div></div>
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="search-box">
+      <input id="searchInput" type="text" autocomplete="off" inputmode="search" placeholder="Поиск по артикулу или размеру">
+      <button class="clear-btn" id="clearBtn">×</button>
+    </div>
+    <div class="segmented" id="viewMode">
+      <button data-mode="articles" class="active">артикулы</button>
+      <button data-mode="sizes">размеры</button>
+    </div>
+    <div class="segmented" id="sortMode">
+      <button data-sort="total" class="active">сумма</button>
+      <button data-sort="current">сейчас</button>
+      <button data-sort="pipeline">будущие поступления</button>
+    </div>
+  </section>
+
+  <main id="content">
+    <div class="status-block">Подключаюсь к Google Таблицам...</div>
+  </main>
+
+  <footer>
+    <span>Источники: первая таблица + вторая таблица + история</span>
+    <span id="footerMeta">ожидание данных</span>
+  </footer>
+</div>
+
+<script>
+const SHEETS = {
+  wb: '1vnb6lBInt1j3yE66qt2dCZlFmRLwKEVBfEjAevS6pfE',
+  turkey: '1hX50t88Ov8a0rU6G4qh8pq088dHjQEGf-wmz1-Od6KY',
+  history: '14WWNGBsdNy_NPvgcjI4iW_rAD0pDaRIWweulIeIquH0'
+};
+
+const SOURCES = [
+  {id:'wbTurnover', spreadsheet:SHEETS.wb, sheet:'Исходные оборачиваемость'},
+  {id:'ff', spreadsheet:SHEETS.wb, sheet:'Краснодар'},
+  {id:'turkey', spreadsheet:SHEETS.turkey, sheet:'Турция'}
+];
+
+const HISTORY_SOURCE = {id:'history', spreadsheet:SHEETS.history, sheet:'История'};
+
+let RAW = {};
+let MODEL = [];
+let ARTICLE_ROWS = [];
+let SIZE_ROWS = [];
+let HISTORY_POINTS = [];
+let HISTORY_ERROR = '';
+let currentMode = 'articles';
+let currentSort = 'total';
+let currentQuery = '';
+let selectedArticle = '';
+let selectedHistoryArticle = '';
+let activeArticleFilter = '';
+const SORT_FIELDS = ['sizes','wb','ff','turkeyWay','reserve','sewing','current','pipeline','total'];
+const HISTORY_SERIES = [
+  {field:'total', label:'Сумма', color:'#e8333a'},
+  {field:'current', label:'Текущий остаток', color:'#3ecf6a'},
+  {field:'pipeline', label:'Будущие поступления', color:'#f0b84a'},
+  {field:'wb', label:'Остатки с ВБ', color:'#67d984'},
+  {field:'ff', label:'Остатки на ФФ', color:'#35b85d'},
+  {field:'turkeyWay', label:'В пути', color:'#f0b84a'},
+  {field:'reserve', label:'Резерв Турция', color:'#d88f2f'},
+  {field:'sewing', label:'Отшив', color:'#5aa9ff'}
+];
+const ACTIVE_HISTORY_FIELDS = new Set(['total','current','pipeline','sewing']);
+
+const input = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const liveDot = document.getElementById('liveDot');
+const content = document.getElementById('content');
+const historyContent = document.getElementById('historyContent');
+
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function fmt(n){
+  const value = Number(n) || 0;
+  return value.toLocaleString('ru-RU', {maximumFractionDigits: value % 1 ? 1 : 0});
+}
+
+function num(value){
+  if(value == null) return 0;
+  if(typeof value === 'number' && Number.isFinite(value)) return value;
+  const s = String(value).replace(/\u00a0/g,'').replace(/\s+/g,'').replace(',', '.').trim();
+  if(!s || s === '-' || s === '—' || s.startsWith('#')) return 0;
+  const parsed = Number(s);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizeText(value){
+  return String(value ?? '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/[\u200b-\u200d\ufeff]/g, '')
+    .replace(/[\u2010-\u2015]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function normalizeSize(value){
+  return normalizeText(value).replace(/\s+/g, '');
+}
+
+function makeKey(article, size){
+  const a = normalizeText(article);
+  const s = normalizeSize(size);
+  if(!a || !s) return '';
+  return `${a}__${s}`;
+}
+
+function columnName(index){
+  let n = index + 1;
+  let out = '';
+  while(n > 0){
+    const r = (n - 1) % 26;
+    out = String.fromCharCode(65 + r) + out;
+    n = Math.floor((n - 1) / 26);
+  }
+  return out;
+}
+
+function getCell(row, fallbackIndex, labels){
+  for(const label of labels || []){
+    if(label in row) return row[label];
+  }
+  return row[columnName(fallbackIndex)] ?? '';
+}
+
+function getColumn(row, index){
+  return row[columnName(index)] ?? '';
+}
+
+function loadGviz(spreadsheetId, sheetName){
+  return new Promise((resolve, reject) => {
+    const cbName = 'gvizCb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    let settled = false;
+    const cleanup = () => {
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    };
+    window[cbName] = (response) => {
+      if(settled) return;
+      settled = true;
+      cleanup();
+      if(response.status === 'error'){
+        reject(new Error(response.errors?.[0]?.detailed_message || response.errors?.[0]?.reason || `Ошибка загрузки листа ${sheetName}`));
+        return;
+      }
+      resolve(parseGvizTable(response.table, sheetName));
+    };
+    const script = document.createElement('script');
+    const params = new URLSearchParams({
+      tqx: 'responseHandler:' + cbName,
+      sheet: sheetName,
+      _: String(Date.now())
+    });
+    script.src = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?${params.toString()}`;
+    script.onerror = () => {
+      if(settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(`Не удалось загрузить лист ${sheetName}`));
+    };
+    document.body.appendChild(script);
+    setTimeout(() => {
+      if(settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(`Таймаут загрузки листа ${sheetName}`));
+    }, 45000);
+  });
+}
+
+function parseGvizTable(table, sheetName){
+  const headers = table.cols.map((col, index) => {
+    const label = String(col.label || '').trim();
+    return label || columnName(index);
+  });
+  const rows = (table.rows || []).map(row => {
+    const out = {};
+    headers.forEach((header, index) => {
+      const cell = row.c?.[index];
+      const value = cell ? (cell.v ?? cell.f ?? '') : '';
+      out[header] = value;
+      out[columnName(index)] = value;
+    });
+    return out;
+  });
+  return {sheetName, headers, rows};
+}
+
+async function loadAll(){
+  refreshBtn.disabled = true;
+  liveDot.style.display = 'inline-block';
+  content.innerHTML = '<div class="status-block">Загружаю остатки и поставки...</div>';
+  historyContent.innerHTML = '<div class="status-block">Загружаю историю слепков...</div>';
+  document.getElementById('historyStamp').textContent = 'загрузка истории...';
+  try {
+    const entries = await Promise.all(SOURCES.map(async source => {
+      const data = await loadGviz(source.spreadsheet, source.sheet);
+      return [source.id, data];
+    }));
+    RAW = Object.fromEntries(entries);
+    try {
+      RAW.history = await loadGviz(HISTORY_SOURCE.spreadsheet, HISTORY_SOURCE.sheet);
+      HISTORY_ERROR = '';
+    } catch(historyErr) {
+      RAW.history = {sheetName:HISTORY_SOURCE.sheet, headers:[], rows:[]};
+      HISTORY_ERROR = historyErr.message;
+    }
+    buildModel();
+    buildHistory();
+    renderHistory();
+    renderDashboard();
+    document.getElementById('snapshotDate').textContent = 'обновлено ' + new Date().toLocaleString('ru-RU', {dateStyle:'short', timeStyle:'short'});
+    document.getElementById('footerMeta').textContent = HISTORY_ERROR ? 'текущие данные загружены, история недоступна' : 'данные и история загружены';
+  } catch(err) {
+    content.innerHTML = `<div class="status-block error">Не удалось загрузить данные: ${escapeHtml(err.message)}<br><br>Проверь доступ к Google Таблицам и обнови страницу.</div>`;
+    historyContent.innerHTML = '<div class="status-block error">Динамика недоступна: сначала нужны текущие источники данных.</div>';
+    document.getElementById('snapshotDate').textContent = 'ошибка загрузки';
+    document.getElementById('footerMeta').textContent = 'ошибка';
+  } finally {
+    refreshBtn.disabled = false;
+    liveDot.style.display = 'none';
+  }
+}
+
+function ensureRecord(map, article, size){
+  const key = makeKey(article, size);
+  if(!key) return null;
+  if(!map.has(key)){
+    map.set(key, {
+      key,
+      article: normalizeText(article),
+      size: normalizeSize(size),
+      wb: 0,
+      ff: 0,
+      turkeyWay: 0,
+      reserve: 0,
+      sewing: 0,
+      sources: new Set()
+    });
+  }
+  return map.get(key);
+}
+
+function buildModel(){
+  const map = new Map();
+
+  RAW.wbTurnover.rows.forEach(row => {
+    const article = getColumn(row, 0); // A: Артикул продавца
+    const size = getColumn(row, 5); // F: Размер
+    const rec = ensureRecord(map, article, size);
+    if(!rec) return;
+    rec.wb += num(getColumn(row, 19)) + num(getColumn(row, 25)); // T + Z
+    rec.sources.add('wb');
+  });
+
+  RAW.ff.rows.forEach(row => {
+    const article = getColumn(row, 1); // B: Артикул продавца
+    const size = getColumn(row, 3); // D: Размер
+    const rec = ensureRecord(map, article, size);
+    if(!rec) return;
+    rec.ff += num(getColumn(row, 4)); // E: Остаток
+    rec.sources.add('ff');
+  });
+
+  RAW.turkey.rows.forEach(row => {
+    const article = getColumn(row, 2); // C: Article / Артикуль
+    const size = getColumn(row, 3); // D: Size / Размер
+    const rec = ensureRecord(map, article, size);
+    if(!rec) return;
+    rec.sewing += num(getColumn(row, 4)); // E: Отшив
+    rec.reserve += num(getColumn(row, 7)); // H: Резерв Турция
+    rec.turkeyWay += num(getColumn(row, 8)); // I: В пути из Турции
+    rec.sources.add('turkey');
+  });
+
+  MODEL = Array.from(map.values()).map(row => ({
+    ...row,
+    current: row.wb + row.ff,
+    pipeline: row.turkeyWay + row.reserve + row.sewing,
+    total: row.wb + row.ff + row.turkeyWay + row.reserve + row.sewing,
+    hasNegative: row.wb < 0 || row.ff < 0 || row.turkeyWay < 0 || row.reserve < 0 || row.sewing < 0,
+    sourceCount: row.sources.size
+  }));
+
+  const articleMap = new Map();
+  MODEL.forEach(row => {
+    if(!articleMap.has(row.article)){
+      articleMap.set(row.article, {
+        article: row.article,
+        sizes: 0,
+        wb: 0,
+        ff: 0,
+        turkeyWay: 0,
+        reserve: 0,
+        sewing: 0,
+        current: 0,
+        pipeline: 0,
+        total: 0,
+        sourceCount: 0
+      });
+    }
+    const item = articleMap.get(row.article);
+    item.sizes += 1;
+    ['wb','ff','turkeyWay','reserve','sewing','current','pipeline','total'].forEach(field => item[field] += row[field]);
+    item.sourceCount = Math.max(item.sourceCount, row.sourceCount);
+  });
+  ARTICLE_ROWS = Array.from(articleMap.values());
+  SIZE_ROWS = MODEL.slice();
+}
+
+function parseHistoryDate(value){
+  if(value instanceof Date && Number.isFinite(value.getTime())) return value;
+  const raw = String(value ?? '').trim();
+  const gvizDate = raw.match(/^Date\((\d+),(\d+),(\d+)/);
+  if(gvizDate){
+    return new Date(Number(gvizDate[1]), Number(gvizDate[2]), Number(gvizDate[3]));
+  }
+  const parsed = new Date(raw);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+function dateKey(date){
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function dateLabel(key){
+  const [y,m,d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit'});
+}
+
+function buildHistory(){
+  const groups = new Map();
+  (RAW.history?.rows || []).forEach(row => {
+    const article = normalizeText(getCell(row, 1, ['Артикул']));
+    if(selectedHistoryArticle && article !== selectedHistoryArticle) return;
+    const parsedDate = parseHistoryDate(getCell(row, 0, ['Дата снимка']));
+    if(!parsedDate) return;
+    const key = dateKey(parsedDate);
+    if(!groups.has(key)){
+      groups.set(key, {
+        key,
+        label: dateLabel(key),
+        wb: 0,
+        ff: 0,
+        turkeyWay: 0,
+        reserve: 0,
+        sewing: 0,
+        current: 0,
+        pipeline: 0,
+        total: 0
+      });
+    }
+    const point = groups.get(key);
+    point.wb += num(getCell(row, 3, ['Остатки с ВБ']));
+    point.ff += num(getCell(row, 4, ['Остатки на ФФ']));
+    point.turkeyWay += num(getCell(row, 5, ['В пути (поставка с Турции)']));
+    point.reserve += num(getCell(row, 6, ['Резерв Турция']));
+    point.sewing += num(getCell(row, 7, ['Отшив']));
+  });
+  HISTORY_POINTS = Array.from(groups.values()).sort((a,b) => a.key.localeCompare(b.key));
+  HISTORY_POINTS.forEach(point => {
+    point.current = point.wb + point.ff;
+    point.pipeline = point.turkeyWay + point.reserve + point.sewing;
+    point.total = point.current + point.pipeline;
+  });
+}
+
+function deltaClass(value){
+  if(value > 0) return 'up';
+  if(value < 0) return 'down';
+  return 'flat';
+}
+
+function signedFmt(value){
+  const sign = value > 0 ? '+' : '';
+  return sign + fmt(value);
+}
+
+function renderDelta(current, previous, field){
+  if(!previous) return '<div class="delta flat">первый слепок</div>';
+  const diff = current[field] - previous[field];
+  return `<div class="delta ${deltaClass(diff)}">${signedFmt(diff)} к прошлому слепку</div>`;
+}
+
+function renderHistory(){
+  if(HISTORY_ERROR){
+    document.getElementById('historyStamp').textContent = 'история недоступна';
+    historyContent.innerHTML = `<div class="status-block error">Не удалось загрузить историю: ${escapeHtml(HISTORY_ERROR)}<br><br>Текущий анализ ниже продолжает работать.</div>`;
+    return;
+  }
+  if(!HISTORY_POINTS.length){
+    document.getElementById('historyStamp').textContent = selectedHistoryArticle ? `нет истории по ${selectedHistoryArticle}` : 'нет слепков';
+    historyContent.innerHTML = selectedHistoryArticle
+      ? `<div class="status-block">Нет данных истории по артикулу ${escapeHtml(selectedHistoryArticle)}.<br><button class="refresh-btn" data-reset-history-filter type="button" style="margin-top:12px;">сбросить фильтр</button></div>`
+      : '<div class="status-block">Пока нет данных истории. Запустите сбор слепка в третьей таблице.</div>';
+    return;
+  }
+
+  const latest = HISTORY_POINTS[HISTORY_POINTS.length - 1];
+  const previous = HISTORY_POINTS[HISTORY_POINTS.length - 2];
+  document.getElementById('historyStamp').textContent = `${HISTORY_POINTS.length} слепков · последний ${latest.label}${selectedHistoryArticle ? ' · ' + selectedHistoryArticle : ''}`;
+
+  historyContent.innerHTML = `<section class="history-panel">
+    <div class="history-head">
+      <div>
+        <div class="history-title">Динамика остатков</div>
+        <div class="history-meta" style="text-align:left;">${selectedHistoryArticle ? `Фильтр: артикул ${escapeHtml(selectedHistoryArticle)}` : 'Фильтр: все артикулы'}${selectedHistoryArticle ? ' · <button class="refresh-btn" data-reset-history-filter type="button">сбросить</button>' : ''}</div>
+      </div>
+      <div class="history-meta">последний слепок<br>${escapeHtml(latest.label)}</div>
+    </div>
+    <div class="history-kpis">
+      <div class="history-kpi"><div class="num accent">${fmt(latest.total)}</div><div class="lbl">Сумма</div>${renderDelta(latest, previous, 'total')}</div>
+      <div class="history-kpi"><div class="num good">${fmt(latest.current)}</div><div class="lbl">Текущий остаток</div>${renderDelta(latest, previous, 'current')}</div>
+      <div class="history-kpi"><div class="num warn">${fmt(latest.pipeline)}</div><div class="lbl">Будущие поступления</div>${renderDelta(latest, previous, 'pipeline')}</div>
+      <div class="history-kpi"><div class="num blue">${fmt(latest.sewing)}</div><div class="lbl">Отшив</div>${renderDelta(latest, previous, 'sewing')}</div>
+    </div>
+    ${renderHistoryFilters()}
+    <div class="chart-wrap">${renderHistoryChart(HISTORY_POINTS)}</div>
+    ${renderHistoryLegend()}
+  </section>`;
+}
+
+function visibleHistorySeries(){
+  const visible = HISTORY_SERIES.filter(item => ACTIVE_HISTORY_FIELDS.has(item.field));
+  return visible.length ? visible : HISTORY_SERIES.filter(item => item.field === 'total');
+}
+
+function renderHistoryFilters(){
+  return `<div class="history-filters">${HISTORY_SERIES.map(item => {
+    const active = ACTIVE_HISTORY_FIELDS.has(item.field);
+    return `<button class="history-filter ${active ? 'active' : ''}" data-history-field="${item.field}" type="button"><i class="legend-swatch" style="background:${item.color}"></i>${item.label}</button>`;
+  }).join('')}</div>`;
+}
+
+function renderHistoryChart(points){
+  const series = visibleHistorySeries();
+  const width = 1000;
+  const height = 260;
+  const pad = {left:54, right:18, top:18, bottom:36};
+  const maxValue = Math.max(1, ...points.flatMap(point => series.map(item => point[item.field] || 0)));
+  const x = index => points.length === 1
+    ? width / 2
+    : pad.left + (index / (points.length - 1)) * (width - pad.left - pad.right);
+  const y = value => pad.top + (1 - value / maxValue) * (height - pad.top - pad.bottom);
+  const grid = [0,.25,.5,.75,1].map(step => {
+    const gy = pad.top + step * (height - pad.top - pad.bottom);
+    const value = maxValue * (1 - step);
+    return `<line class="chart-grid" x1="${pad.left}" y1="${gy}" x2="${width - pad.right}" y2="${gy}"></line><text class="chart-axis-label" x="6" y="${gy + 4}">${fmt(value)}</text>`;
+  }).join('');
+  const lines = series.map(item => {
+    const coords = points.map((point,index) => `${x(index)},${y(point[item.field] || 0)}`).join(' ');
+    const dots = points.map((point,index) => {
+      const value = point[item.field] || 0;
+      return `<circle cx="${x(index)}" cy="${y(value)}" r="3.4" fill="${item.color}"><title>${escapeHtml(item.label)} · ${escapeHtml(point.label)} · ${fmt(value)}</title></circle>`;
+    }).join('');
+    return `<polyline class="chart-line" points="${coords}" stroke="${item.color}"></polyline>${dots}`;
+  }).join('');
+  const labels = points.map((point,index) => {
+    if(points.length > 8 && index !== 0 && index !== points.length - 1 && index % Math.ceil(points.length / 6) !== 0) return '';
+    return `<text class="chart-axis-label" x="${x(index)}" y="${height - 10}" text-anchor="middle">${escapeHtml(point.label)}</text>`;
+  }).join('');
+
+  return `<svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Динамика остатков по датам">
+    ${grid}
+    ${lines}
+    ${labels}
+  </svg>`;
+}
+
+function renderHistoryLegend(){
+  const items = visibleHistorySeries();
+  return `<div class="chart-legend">${items.map(item => `<span class="legend-item"><i class="legend-swatch" style="background:${item.color}"></i>${item.label}</span>`).join('')}</div>`;
+}
+
+function visibleModelRows(){
+  return activeArticleFilter
+    ? MODEL.filter(row => row.article === activeArticleFilter)
+    : MODEL;
+}
+
+function resetArticleFilter(){
+  activeArticleFilter = '';
+  selectedHistoryArticle = '';
+  selectedArticle = '';
+  buildHistory();
+  renderHistory();
+  renderDashboard();
+}
+
+function totals(){
+  return visibleModelRows().reduce((acc, row) => {
+    ['wb','ff','turkeyWay','reserve','sewing','current','pipeline','total'].forEach(field => acc[field] += row[field]);
+    return acc;
+  }, {wb:0, ff:0, turkeyWay:0, reserve:0, sewing:0, current:0, pipeline:0, total:0});
+}
+
+function updateKpis(){
+  const t = totals();
+  const articleCount = new Set(visibleModelRows().map(row => row.article)).size;
+  document.getElementById('kpiCurrent').textContent = fmt(t.current);
+  document.getElementById('kpiPipeline').textContent = fmt(t.pipeline);
+  document.getElementById('kpiTotal').textContent = fmt(t.total);
+  document.getElementById('kpiArticles').textContent = fmt(articleCount);
+  document.getElementById('srcWb').textContent = fmt(t.wb);
+  document.getElementById('srcFf').textContent = fmt(t.ff);
+  document.getElementById('srcTurkeyWay').textContent = fmt(t.turkeyWay);
+  document.getElementById('srcReserve').textContent = fmt(t.reserve);
+  document.getElementById('srcSewing').textContent = fmt(t.sewing);
+  document.getElementById('sourceStamp').innerHTML = activeArticleFilter
+    ? `артикул ${escapeHtml(activeArticleFilter)} · <button class="refresh-btn" data-reset-article-filter type="button">сбросить</button>`
+    : 'загружено сейчас';
+}
+
+function filteredRows(){
+  const q = normalizeText(currentQuery);
+  const source = currentMode === 'articles' ? ARTICLE_ROWS : SIZE_ROWS;
+  const articleFiltered = activeArticleFilter
+    ? source.filter(row => row.article === activeArticleFilter)
+    : source.slice();
+  const rows = q ? articleFiltered.filter(row => {
+    const hay = currentMode === 'articles'
+      ? row.article
+      : `${row.article} ${row.size}`;
+    return normalizeText(hay).includes(q);
+  }) : articleFiltered;
+  const field = SORT_FIELDS.includes(currentSort) ? currentSort : 'total';
+  rows.sort((a,b) => (Number(b[field] || 0) - Number(a[field] || 0)) || String(a.article).localeCompare(String(b.article), 'ru', {numeric:true}));
+  return rows;
+}
+
+function syncSortButtons(){
+  document.querySelectorAll('#sortMode button').forEach(item => item.classList.toggle('active', item.dataset.sort === currentSort));
+}
+
+function renderDashboard(){
+  updateKpis();
+  const rows = filteredRows();
+  const maxTotal = Math.max(...rows.map(row => row.total), 1);
+  const title = activeArticleFilter
+    ? `${currentMode === 'articles' ? 'Артикул' : 'Размеры артикула'} ${activeArticleFilter}`
+    : (currentMode === 'articles' ? 'Артикулы' : 'Артикул-размеры');
+  const subtitle = `${fmt(rows.length)} строк`;
+
+  content.innerHTML = `
+    <div class="summary single">
+      <section class="panel">
+        <div class="panel-head">
+          <div class="panel-title">${title}</div>
+          <div class="panel-meta">${subtitle}</div>
+        </div>
+        <div class="table-wrap">
+          ${renderMainTable(rows.slice(0, 80), maxTotal)}
+        </div>
+      </section>
+    </div>
+    <section class="panel detail" id="detailPanel"></section>
+  `;
+  if(currentMode === 'articles' && rows.length && !selectedArticle){
+    selectedArticle = rows[0].article;
+  }
+  if(selectedArticle) renderArticle(selectedArticle);
+}
+
+function renderMainTable(rows, maxTotal){
+  if(!rows.length) return '<div class="status-block">Ничего не найдено</div>';
+  const isArticles = currentMode === 'articles';
+  const head = isArticles
+    ? `<tr><th class="left">Артикул</th><th class="sortable ${currentSort === 'sizes' ? 'active' : ''}" data-sort-field="sizes">Размеров</th><th class="sortable ${currentSort === 'wb' ? 'active' : ''}" data-sort-field="wb">Остатки с ВБ</th><th class="sortable ${currentSort === 'ff' ? 'active' : ''}" data-sort-field="ff">Остатки на ФФ</th><th class="sortable wide-only ${currentSort === 'turkeyWay' ? 'active' : ''}" data-sort-field="turkeyWay">В пути (поставка с Турции)</th><th class="sortable wide-only ${currentSort === 'reserve' ? 'active' : ''}" data-sort-field="reserve">Резерв Турция</th><th class="sortable wide-only ${currentSort === 'sewing' ? 'active' : ''}" data-sort-field="sewing">Отшив</th><th class="sortable ${currentSort === 'total' ? 'active' : ''}" data-sort-field="total">Сумма</th><th class="wide-only"></th></tr>`
+    : '<tr><th class="left">Артикул</th><th>Размер</th><th>Остатки с ВБ</th><th>Остатки на ФФ</th><th class="wide-only">В пути (поставка с Турции)</th><th class="wide-only">Резерв Турция</th><th class="wide-only">Отшив</th><th>Сумма</th><th class="wide-only"></th></tr>';
+  const body = rows.map(row => {
+    const width = Math.max(3, Math.round(row.total / maxTotal * 100));
+    const dataAttr = `data-article="${escapeHtml(row.article)}"`;
+    return `<tr class="click-row" ${dataAttr}>
+      <td class="left article">${escapeHtml(row.article)}</td>
+      <td class="${isArticles ? '' : 'size'}">${isArticles ? fmt(row.sizes) : escapeHtml(row.size)}</td>
+      <td class="good">${fmt(row.wb)}</td>
+      <td class="good">${fmt(row.ff)}</td>
+      <td class="warn wide-only">${fmt(row.turkeyWay)}</td>
+      <td class="warn wide-only">${fmt(row.reserve)}</td>
+      <td class="blue wide-only">${fmt(row.sewing)}</td>
+      <td class="accent">${fmt(row.total)}</td>
+      <td class="bar-cell wide-only"><div class="bar"><i style="width:${width}%"></i></div></td>
+    </tr>`;
+  }).join('');
+  setTimeout(() => {
+    document.querySelectorAll('th[data-sort-field]').forEach(th => th.addEventListener('click', () => {
+      currentSort = th.dataset.sortField;
+      syncSortButtons();
+      renderDashboard();
+    }));
+    document.querySelectorAll('.click-row').forEach(row => row.addEventListener('click', () => {
+      selectedArticle = row.dataset.article;
+      activeArticleFilter = selectedArticle;
+      selectedHistoryArticle = activeArticleFilter;
+      buildHistory();
+      renderHistory();
+      renderDashboard();
+      document.getElementById('detailPanel')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }));
+  }, 0);
+  return `<table>${head}<tbody>${body}</tbody></table>`;
+}
+
+function renderQuality(){
+  const wbKeys = new Set();
+  const ffKeys = new Set();
+  const turkeyKeys = new Set();
+  MODEL.forEach(row => {
+    if(row.sources.has('wb')) wbKeys.add(row.key);
+    if(row.sources.has('ff')) ffKeys.add(row.key);
+    if(row.sources.has('turkey')) turkeyKeys.add(row.key);
+  });
+  const onlyOne = MODEL.filter(row => row.sourceCount === 1).length;
+  const onlyWb = MODEL.filter(row => row.sources.has('wb') && !row.sources.has('turkey')).length;
+  const onlyTurkey = MODEL.filter(row => row.sources.has('turkey') && !row.sources.has('wb')).length;
+  const negatives = MODEL.filter(row => row.hasNegative).length;
+  return `<div class="quality-list">
+    <div class="quality-item"><span>Ключей: Остатки с ВБ</span><b>${fmt(wbKeys.size)}</b></div>
+    <div class="quality-item"><span>Ключей: Остатки на ФФ</span><b>${fmt(ffKeys.size)}</b></div>
+    <div class="quality-item"><span>Ключей: Турция</span><b>${fmt(turkeyKeys.size)}</b></div>
+    <div class="quality-item"><span>Только один источник</span><b>${fmt(onlyOne)}</b></div>
+    <div class="quality-item"><span>Остатки с ВБ без Турции</span><b>${fmt(onlyWb)}</b></div>
+    <div class="quality-item"><span>Турция без Остатков с ВБ</span><b>${fmt(onlyTurkey)}</b></div>
+    <div class="quality-item"><span>Отрицательные значения</span><b>${fmt(negatives)}</b></div>
+    <div class="quality-item"><span>Строк листа Остатки с ВБ</span><b>${fmt(RAW.wbTurnover.rows.length)}</b></div>
+    <div class="quality-item"><span>Строк листа Остатки на ФФ</span><b>${fmt(RAW.ff.rows.length)}</b></div>
+    <div class="quality-item"><span>Строк Турция листа</span><b>${fmt(RAW.turkey.rows.length)}</b></div>
+  </div>`;
+}
+
+function renderArticle(article){
+  const panel = document.getElementById('detailPanel');
+  if(!panel) return;
+  const rows = MODEL.filter(row => row.article === article).sort((a,b) => String(a.size).localeCompare(String(b.size), 'ru', {numeric:true}));
+  if(!rows.length){
+    panel.classList.remove('show');
+    return;
+  }
+  const total = rows.reduce((acc,row) => {
+    ['wb','ff','turkeyWay','reserve','sewing','current','pipeline','total'].forEach(field => acc[field] += row[field]);
+    return acc;
+  }, {wb:0, ff:0, turkeyWay:0, reserve:0, sewing:0, current:0, pipeline:0, total:0});
+  const max = Math.max(...rows.map(row => row.total), 1);
+  const body = rows.map(row => {
+    const width = Math.max(3, Math.round(row.total / max * 100));
+    return `<tr>
+      <td class="left size">${escapeHtml(row.size)}</td>
+      <td class="good">${fmt(row.wb)}</td>
+      <td class="good">${fmt(row.ff)}</td>
+      <td class="warn">${fmt(row.turkeyWay)}</td>
+      <td class="warn">${fmt(row.reserve)}</td>
+      <td class="blue">${fmt(row.sewing)}</td>
+      <td class="accent">${fmt(row.total)}</td>
+      <td class="bar-cell wide-only"><div class="bar"><i style="width:${width}%"></i></div></td>
+    </tr>`;
+  }).join('');
+  panel.innerHTML = `<div class="article-head">
+    <div>
+      <div class="article-code">${escapeHtml(article)}</div>
+      <div class="article-type">${fmt(rows.length)} размеров · Остатки с ВБ + Остатки на ФФ ${fmt(total.current)} · будущие поступления ${fmt(total.pipeline)}</div>
+    </div>
+    <div class="article-total"><div class="num">${fmt(total.total)}</div><div class="lbl">сумма слоёв</div></div>
+  </div>
+  <div class="source-pill-row">
+    <div class="pill">Остатки с ВБ <b>${fmt(total.wb)}</b></div>
+    <div class="pill">Остатки на ФФ <b>${fmt(total.ff)}</b></div>
+    <div class="pill">В пути (поставка с Турции) <b>${fmt(total.turkeyWay)}</b></div>
+    <div class="pill">Резерв Турция <b>${fmt(total.reserve)}</b></div>
+    <div class="pill">Отшив <b class="blue">${fmt(total.sewing)}</b></div>
+  </div>
+  <table>
+    <thead><tr><th class="left">Размер</th><th>Остатки с ВБ</th><th>Остатки на ФФ</th><th>В пути (поставка с Турции)</th><th>Резерв Турция</th><th>Отшив</th><th>Сумма</th><th class="wide-only"></th></tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+  panel.classList.add('show');
+}
+
+input.addEventListener('input', () => {
+  currentQuery = input.value;
+  clearBtn.style.display = input.value ? 'block' : 'none';
+  selectedArticle = '';
+  renderDashboard();
+});
+
+clearBtn.addEventListener('click', () => {
+  input.value = '';
+  currentQuery = '';
+  clearBtn.style.display = 'none';
+  selectedArticle = '';
+  renderDashboard();
+  input.focus();
+});
+
+document.getElementById('viewMode').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-mode]');
+  if(!btn) return;
+  currentMode = btn.dataset.mode;
+  selectedArticle = '';
+  document.querySelectorAll('#viewMode button').forEach(item => item.classList.toggle('active', item === btn));
+  renderDashboard();
+});
+
+document.getElementById('sortMode').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-sort]');
+  if(!btn) return;
+  currentSort = btn.dataset.sort;
+  syncSortButtons();
+  renderDashboard();
+});
+
+historyContent.addEventListener('click', (e) => {
+  const resetBtn = e.target.closest('button[data-reset-history-filter]');
+  if(resetBtn){
+    resetArticleFilter();
+    return;
+  }
+  const btn = e.target.closest('button[data-history-field]');
+  if(!btn) return;
+  const field = btn.dataset.historyField;
+  if(ACTIVE_HISTORY_FIELDS.has(field)){
+    if(ACTIVE_HISTORY_FIELDS.size === 1) return;
+    ACTIVE_HISTORY_FIELDS.delete(field);
+  } else {
+    ACTIVE_HISTORY_FIELDS.add(field);
+  }
+  renderHistory();
+});
+
+document.addEventListener('click', (e) => {
+  const resetBtn = e.target.closest('button[data-reset-article-filter]');
+  if(!resetBtn) return;
+  resetArticleFilter();
+});
+
+refreshBtn.addEventListener('click', loadAll);
+liveDot.style.display = 'none';
+loadAll();
+</script>
+</body>
+</html>
