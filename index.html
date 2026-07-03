@@ -222,15 +222,6 @@
       <input id="searchInput" type="text" autocomplete="off" inputmode="search" placeholder="Поиск по артикулу или размеру">
       <button class="clear-btn" id="clearBtn">×</button>
     </div>
-    <div class="segmented" id="viewMode">
-      <button data-mode="articles" class="active">артикулы</button>
-      <button data-mode="sizes">размеры</button>
-    </div>
-    <div class="segmented" id="sortMode">
-      <button data-sort="total" class="active">сумма</button>
-      <button data-sort="current">сейчас</button>
-      <button data-sort="pipeline">будущие поступления</button>
-    </div>
   </section>
 
   <main id="content">
@@ -916,23 +907,6 @@ clearBtn.addEventListener('click', () => {
   selectedArticle = '';
   renderDashboard();
   input.focus();
-});
-
-document.getElementById('viewMode').addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-mode]');
-  if(!btn) return;
-  currentMode = btn.dataset.mode;
-  selectedArticle = '';
-  document.querySelectorAll('#viewMode button').forEach(item => item.classList.toggle('active', item === btn));
-  renderDashboard();
-});
-
-document.getElementById('sortMode').addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-sort]');
-  if(!btn) return;
-  currentSort = btn.dataset.sort;
-  syncSortButtons();
-  renderDashboard();
 });
 
 historyContent.addEventListener('click', (e) => {
